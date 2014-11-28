@@ -18,9 +18,8 @@
 
 MODULE_LICENSE("Dual BSD/GPL");
 
-#define PORT 4242
-#define SERVER_ADDR "127.0.0.1"
-
+#define PORT 1111
+#define SERVER_ADDR "192.168.37.138"
 struct task_struct *kthread = NULL;
 struct mutex mutex;
 struct socket *sock = NULL;
@@ -45,18 +44,6 @@ static void convert_from_addr(const char *addr, unsigned char nbs[4])
 		nbs[pos++] = value;
 		if (!addr[i])
 			return;
-	}
-}
-
-static void ksocket_start(void)
-{
-	printk("Thread launched !");
-	for (;;)
-	{
-		mutex_lock(&mutex);
-		usleep_range(10000, 10000);
-		mutex_unlock(&mutex);
-		usleep_range(1000, 1000);
 	}
 }
 
@@ -94,14 +81,14 @@ static int my_connect(struct socket **s, const char *s_addr)
 	struct sockaddr_in address = {0};
 	int len = sizeof(struct sockaddr_in), ret;
 	unsigned char i_addr[4] = {0};
-	if ((ret = sock_create(AF_INET, SOCK_STREAM, 0, s)) < 0)
+	if ((ret = sock_create(AF_INET, SOCK_STREAM, IPPROTO_TCP, s)) < 0)
 	{
 		printk("echo_server: sock_create error");
 		return ret;
 	}
 	convert_from_addr(s_addr, i_addr);
 	address.sin_addr.s_addr = *(unsigned int*)i_addr;
-	address.sin_port = PORT;
+	address.sin_port = htons(PORT);
 	address.sin_family = AF_INET;
 	if ((ret = (*s)->ops->connect(sock, (struct sockaddr*)&address, len, 0)) < 0)
 	{
@@ -120,16 +107,6 @@ static int echo_server_init(void)
 		printk("echo_server: connect error");
 		return ret;
 	}
-	mutex_init(&mutex);
-	kthread = kthread_run((void *)ksocket_start, NULL, "echo-server");
-	if (IS_ERR(kthread))
-	{
-		sock_release(sock);
-		sock = NULL;
-		printk(KERN_INFO "echo-server: unable to start kernel thread\n");
-		kthread = NULL;
-		return -ENOMEM;
-	}
 	printk(KERN_ALERT "echo-server is on !\n");  
 	send_msg(init_msg, size_init_msg);
 	return 0;
@@ -137,31 +114,12 @@ static int echo_server_init(void)
 
 static void echo_server_exit(void)
 {
-	int err;
-	
 	send_msg(exit_msg, size_exit_msg);
-	if (kthread == NULL)
-		printk(KERN_INFO "echo-server: no kernel thread to kill\n");
-	else 
-	{
-		mutex_lock(&mutex);
-		err = kthread_stop(kthread);
-		//err = kill_proc(kthread->thread->pid, SIGKILL, 1);
-		
-		/* wait for kernel thread to die */
-		if (err < 0)
-			printk(KERN_INFO "echo-server: unknown error %d while trying to terminate kernel thread\n", -err);
-		else
-			printk(KERN_INFO "echo-server: succesfully killed kernel thread!\n");
-	}
 	if (sock != NULL)
 	{
 		sock_release(sock);
 		sock = NULL;
-	}
-	
-	/* free allocated resources before exit */
-	kthread = NULL;
+	}	
 	printk(KERN_ALERT "echo-server is now ending\n");
 }
 
