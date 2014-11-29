@@ -16,10 +16,22 @@ static int __init mymodule_init(void)
 	return 0;
 }
 
+static int my_fault(struct vm_area_struct *vma, struct vm_fault *vmf) {
+	pr_info("There is page fault !");
+	return 0;
+}
+
+struct vm_operations_struct my_vm_ops = {
+	.fault = my_fault
+};
+
 SYSCALL_DEFINE2(net_malloc, unsigned int, size, unsigned long *, ptr)
 {
 	unsigned long addr;
+	struct vm_area_struct *vm_area;
 	addr = vm_mmap(0, 0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0);
+	vm_area = find_vma(current->mm, addr);
+	vm_area->vm_ops = &my_vm_ops;
 	copy_to_user(ptr, &addr, sizeof(addr));
 	printk("syscall called: %p\n", addr);
 	return 0;
