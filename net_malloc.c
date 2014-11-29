@@ -11,30 +11,27 @@ module_param(ip, charp, 0);
 static int port = 4242;
 module_param(port, int, 0);
 
-/*
 static int __init mymodule_init(void)
 {
 	return 0;
 }
-*/
 
 SYSCALL_DEFINE2(net_malloc, unsigned int, size, unsigned long *, ptr)
 {
-	*ptr = vm_mmap(0, 0, 50, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS, 0);
+	unsigned long addr;
+	addr = vm_mmap(0, 0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0);
+	copy_to_user(ptr, &addr, sizeof(addr));
+	printk("syscall called: %p\n", addr);
 	return 0;
 }
 
-/*
 static void __exit mymodule_exit(void)
 {
 	pr_info("mymodule: exit\n");
 	return;
 }
-*/
 
-/*
 module_init(mymodule_init);
 module_exit(mymodule_exit);
-*/
 
 MODULE_LICENSE("GPL");
