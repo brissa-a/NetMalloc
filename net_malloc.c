@@ -1,6 +1,7 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/mm.h>
+#include <linux/mman.h>
 #include <linux/syscalls.h>
 
 /* Module */
@@ -17,16 +18,9 @@ static int __init mymodule_init(void)
 }
 */
 
-SYSCALL_DEFINE1(net_malloc, unsigned int, size)
+SYSCALL_DEFINE2(net_malloc, unsigned int, size, unsigned long *, ptr)
 {
-	pr_info("mymodule: net_malloc called");
-/*
-	int toto;	
-	pr_info("mymodule: runned with %s:%d\n", ip, port);
-	toto = get_unmapped_area(0, 0, 50, 0, 0);
-	pr_info("mymodule: RETURN: %d\n", toto);
-	vm_mmap(0, toto, 50, 0, 0, 0);
-*/
+	*ptr = vm_mmap(0, 0, 50, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS, 0);
 	return 0;
 }
 
