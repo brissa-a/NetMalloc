@@ -11,13 +11,21 @@ module_param(ip, charp, 0);
 static int port = 4242;
 module_param(port, int, 0);
 
+static unsigned long page = 0;
+
 static int __init mymodule_init(void)
 {
 	return 0;
 }
 
-static int my_fault(struct vm_area_struct *vma, struct vm_fault *vmf) {
+static int my_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+{
 	pr_info("There is page fault !");
+	if (page == 0)
+	{
+		page = get_zeroed_page(GFP_KERNEL);
+	}
+	vmf->page = virt_to_page(page);
 	return 0;
 }
 
@@ -27,7 +35,7 @@ struct vm_operations_struct my_vm_ops = {
 
 SYSCALL_DEFINE2(net_malloc, unsigned int, size, unsigned long *, ptr)
 {
-	unsigned long addr;
+
 	struct vm_area_struct *vm_area;
 	addr = vm_mmap(0, 0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0);
 	vm_area = find_vma(current->mm, addr);
