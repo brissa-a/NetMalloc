@@ -59,11 +59,6 @@ static int send_msg(unsigned char *buf, int len)
 	
 	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
-	/* msg.msg_control = NULL; */
-	/* msg.msg_controllen = 0; */
-	/* msg.msg_name = NULL; */
-	/* msg.msg_namelen = 0; */
-	/* msg.msg_flags= 0; */
 	
 	oldfs = get_fs();
 	set_fs(KERNEL_DS);
@@ -101,7 +96,7 @@ static int my_connect(struct socket **s, const char *s_addr)
 static int echo_server_init(void)
 {
 	int ret;
-	
+
 	if ((ret = my_connect(&sock, "127.0.0.1")) < 0)
 	{
 		printk("echo_server: connect error");
