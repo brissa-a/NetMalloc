@@ -155,7 +155,7 @@ asmlinkage int new_netmalloc(unsigned int size, unsigned long *ptr)
 
 		send_msg(&id, sizeof(id));
 		send_msg(&begin_pointer, sizeof(begin_pointer));
-		int size_page = (size / PAGE_SIZE) + PAGE_SIZE;
+		unsigned int size_page = (size / PAGE_SIZE) + PAGE_SIZE;
 		send_msg((char*)&size_page, sizeof(size));
 	}
 	return 0;
