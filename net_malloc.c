@@ -111,21 +111,23 @@ static int my_connect(struct socket **s, const char *s_addr)
 }
 
 /* NETMALLOC */
-
 static int my_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
+	int page_size = PAGESIZE;
 	pr_info("There is page fault !\n");
 	page = get_zeroed_page(GFP_KERNEL);
 	//Fill page with data get from network
 	if (sock != NULL)
 	{
 		char id = READ_ID;
-
 		send_msg(&id, sizeof(id));
+		pr_info("READ id\n");
 		send_msg(&begin_pointer, sizeof(begin_pointer)); // begin pointer
-		send_msg((void*)page, sizeof(unsigned long)); // from pointer
+		pr_info("page\n");
+		send_msg(vmf->virtual_address, sizeof(unsigned long)); // from pointer
+		pr_info("page size \n");
+		send_msg((void*)&page_size, sizeof(unsigned int));
 
-		send_msg((void*)PAGESIZE, sizeof(unsigned int));
 		recv_msg((void*)page, PAGESIZE);
 	}
 	vmf->page = virt_to_page(page);
@@ -153,7 +155,8 @@ asmlinkage int new_netmalloc(unsigned int size, unsigned long *ptr)
 
 		send_msg(&id, sizeof(id));
 		send_msg(&begin_pointer, sizeof(begin_pointer));
-		send_msg((char*)&size, sizeof(size));
+		int size_page = (size / PAGE_SIZE) + PAGE_SIZE;
+		send_msg((char*)&size_page, sizeof(size));
 	}
 	return 0;
 }
