@@ -26,7 +26,6 @@ unsigned long original_cr0;
 unsigned long begin_pointer = 0;
 
 #define SYSCALL_TO_REPLACE __NR_epoll_ctl_old
-#define PAGESIZE 4096
 
 /* NETWORK */
 #define READ_ID 1
@@ -113,7 +112,7 @@ static int my_connect(struct socket **s, const char *s_addr)
 /* NETMALLOC */
 static int my_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
-	int page_size = PAGESIZE;
+	int page_size = PAGE_SIZE;
 	pr_info("There is page fault !\n");
 	page = get_zeroed_page(GFP_KERNEL);
 	//Fill page with data get from network
@@ -124,11 +123,11 @@ static int my_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 		pr_info("READ id\n");
 		send_msg(&begin_pointer, sizeof(begin_pointer)); // begin pointer
 		pr_info("page\n");
-		send_msg(vmf->virtual_address, sizeof(unsigned long)); // from pointer
+		send_msg(&vmf->virtual_address, sizeof(unsigned long)); // from pointer
 		pr_info("page size \n");
 		send_msg((void*)&page_size, sizeof(unsigned int));
 
-		recv_msg((void*)page, PAGESIZE);
+		recv_msg((void*)page, PAGE_SIZE);
 	}
 	vmf->page = virt_to_page(page);
 	return 0;
@@ -142,20 +141,20 @@ asmlinkage int new_netmalloc(unsigned int size, unsigned long *ptr)
 {
 	struct vm_area_struct *vm_area;
 
-	printk("=============> overwrite syscall !\n");
+	printk("=============> overwrite syscall +  new vm allocation\n");
 	begin_pointer = vm_mmap(0, 0, size, PROT_READ | PROT_WRITE | PROT_EXEC,
 				MAP_ANONYMOUS | MAP_PRIVATE, 0);
 	vm_area = find_vma(current->mm, begin_pointer);
 	vm_area->vm_ops = &my_vm_ops;
 	copy_to_user(ptr, &begin_pointer, sizeof(begin_pointer));
 
-	if (sock != NULL)
+	if (sock != NULL && size != 0)
 	{
 		char id = ALLOC_ID;
 
 		send_msg(&id, sizeof(id));
 		send_msg(&begin_pointer, sizeof(begin_pointer));
-		unsigned int size_page = (size / PAGE_SIZE) + PAGE_SIZE;
+		unsigned int size_page = (size / PAGE_SIZE) * PAGE_SIZE + PAGE_SIZE;
 		send_msg((char*)&size_page, sizeof(size));
 	}
 	return 0;

@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PORT 4242
 
@@ -56,6 +57,9 @@ void add_new_element(netmalloc **head, unsigned long begin_pointer, unsigned int
 	if (!*head) {
 		*head = malloc(sizeof(netmalloc));
 		(*head)->pointer = malloc(malloc_size);
+		char *init_text = "Guillaume est le meilleur";
+		strncpy((*head)->pointer, init_text,
+			strlen(init_text) < malloc_size ? strlen(init_text) : malloc_size);
 		(*head)->size = malloc_size;
 		(*head)->next = 0;
 		(*head)->begin = begin_pointer;
@@ -69,6 +73,9 @@ void add_new_element(netmalloc **head, unsigned long begin_pointer, unsigned int
 	}
 	new->pointer = malloc(malloc_size);
 	new->size = malloc_size;
+	char *init_text2 = "Non en faite c'est Alexis";
+	strncpy(new->pointer, init_text2,
+		strlen(init_text2) < malloc_size ? strlen(init_text2) : malloc_size);
 	new->next = 0;
 	new->begin = begin_pointer;
 	tmp->next = new;
@@ -141,6 +148,7 @@ void handle_client(int client)
 			printf("ALLOC\n");
 			if (!get_all_data(&begin_pointer, sizeof(begin_pointer), client))
 				break;
+			printf("begin_pointer received\n", begin_pointer, malloc_size);	
 			if (!get_all_data(&malloc_size, sizeof(malloc_size), client))
 				break;
 			printf("%lu %d\n", begin_pointer, malloc_size);
