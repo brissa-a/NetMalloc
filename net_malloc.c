@@ -73,7 +73,7 @@ static int get_data(void *buf, int len, int send)
 	set_fs(oldfs);
 
 	if (size < 0)
-		printk("thug_write_to_socket: sock_sendmsg error: %d\n", size);
+		printk("%s: error: %d\n", send ? "sock_sendmsg" : "sock_recvmsg", size);
 
 	return size;
 }
